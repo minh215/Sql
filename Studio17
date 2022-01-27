@@ -1,0 +1,65 @@
+select a.PartNumber, a.Manufacturer, a.Brand, b.old_audit,b.last_audit_date, b.current_audit,b.current_audit_date, b.ItemId, b.AuditFlag, c.EnableDisplay, c.PhotoTypeId
+
+,d.LastInvoice, d.replenishment_method, d.Qty_On_Hand
+
+ 
+
+from
+
+(
+
+select i.PartNumber, m.Manufacturer, b.Brand, i.Id, i.HotItem, i.Deleted, i.Obsolete --part number/manfr/brand
+
+from radiant.items.Items i
+
+join radiant.items.Manufacturers m on m.Id=i.ManufacturerId
+
+join radiant.items.Brands b on b.id=i.BrandId
+
+)as a
+
+ 
+
+ 
+
+ 
+
+join ( select ha.ChangedBy as old_audit, au.ChangedBy as current_audit, ha.ItemId, au.AuditFlag --//audit hisotry /audit current audits/itemid
+
+,ha.ChangedDate as last_audit_date, au.ChangedDate as current_audit_date
+
+from radiant.items.HistoryAudits ha
+
+join radiant.items.Audits au on au.ItemId=ha.ItemId
+
+)as b on b.ItemId=a.Id
+
+ 
+
+ 
+
+ 
+
+join ( select ph.ItemId,ph.EnableDisplay, ph.PhotoTypeId --// photos
+
+from radiant.Catalog.Photos ph
+
+) as c on c.ItemId=a.Id
+
+ 
+
+ 
+
+ 
+
+full join ( select s.LastInvoice, p.replenishment_method, s.itemid, p.Qty_On_Hand
+
+from radiant.PurchasingData.Sales s ----/// sales/planning
+
+full join radiant.PurchasingData.Planning p on p.ItemId=s.itemid
+
+) as d on d.itemid= a.Id
+
+ 
+
+where d.replenishment_method is null and d.LastInvoice is not null and a.Deleted=0 and a.Obsolete=0
